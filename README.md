@@ -8,7 +8,7 @@
 
 ## Хэсэг А: Category-Partition арга (гараар)
 
-Тестлэх функц: `POST /transfer { "from": ID, "to": ID, "amount": NUM, "currency": CODE }`
+Тестлэх функц: `POST /transfer { "from": ID, "to": ID, "amount": NUM, "currency": CODE }`  
 Амжилт: `201 {"result":"OK"}` · Оролтын алдаа: `200 {"result":"ERROR_..."}`
 
 **Тестийн орчны тохиргоо (бүх тестэд ижил):**
@@ -60,13 +60,9 @@
 - Хязгаарлалтын дараа: хэвийн утгуудын хослол 1 × 1 × 1 × 2 × 1 = **2** (happy path, валют `Same`/`Different`) + `[ERROR]` утга бүр нэг удаа = **7** + `[SINGLE]` = **1** → **M = 10**
 - **Үр дүн: 144 → 10**
 
-(PICT-ийн `IF` хязгаарлалтаар хэмжвэл: 72 хос (DailyLimitStatus-гүй) → 42. Амжилттай `Amount = Normal` үед 3 × 3 × 1 × 2 = 18, бусад 3 дүнд from ≠ Missing, to ≠ Missing байх 2 × 2 × 3 × 2 = 24; нийт 18 + 24 = 42.)
-
 ### Даалгавар A3 — Спецификацийн хүснэгт ба алдааны давуу эрэмбэ
 
 **Давуу эрэмбэ:** `from` → `to` → `amount`. Дотроо: `ERROR_NO_FROM` → `ERROR_FROZEN` → `ERROR_NO_TO` → `ERROR_SAME_ACCOUNT` → `ERROR_BAD_AMOUNT` → `ERROR_INSUFFICIENT` → `ERROR_LIMIT`.
-
-**Үндэслэл:** Хүсэлтийг хамгийн "суурь" баримтаас нь эхлэн шалгана — эхлээд илгээгч (байгаа эсэх, царцсан эсэх), дараа нь хүлээн авагч, хамгийн сүүлд дүн; дүнгийн шалгалт үлдэгдэл, лимитийг (мөн ханшийн хөрвүүлэлтийг) ашигладаг тул хоёр данс хүчинтэй болсны дараа л утгатай. Хэрэв нэг хүсэлтэд олон алдаа байвал энэ эрэмбээр эхний алдааны код буцна.
 
 | № | from | to | amount | currency | Далд орчин | Хүлээгдэх үр дүн (Oracle) | Тайлбар / Төрөл |
 |---|---|---|---|---|---|---|---|
@@ -90,83 +86,83 @@
 
 ## Хэсэг Б: PICT хэрэгсэл
 
-PICT-ийг `microsoft/pict` репозиторийн эх кодоос `cmake` ашиглан бүтээсэн (репогоос гадна `~/tools/pict` дотор). Нотолгоо: `results/pict-build.txt`. 
+PICT-ийг `microsoft/pict` репозиторийн эх кодоос бүтээсэн (репогоос гадна байрлуулсан). Нотолгоо: `results/pict-build.txt`.
 
 ### Даалгавар B1 — Browser жишээ (`browser.model`)
-
-Загвар: `Content`(3), `Cookies`(3), `Popups`, `Addons`, `Attacks`, `Forgeries` (тус бүр 2).
 
 | Горим | Мөрийн тоо (толгойгүй) | Файл |
 |---|---|---|
 | 2-way | **10** | `results/browser-2way.txt` |
-| 3-way| **20** | `results/browser-3way.txt` |
+| 3-way | **20** | `results/browser-3way.txt` |
 | Бүрэн олонлог | 144 (3×3×2×2×2×2) | — |
 
-**Greedy-гийн тайлбар:** Лекц дээр гараар 9 мөрөнд (хамгийн багадаа 3 × 3 = 9, учир нь `Content` × `Cookies`-ийн бүх 9 хос тус тусдаа мөр шаарддаг) багтаасан бол PICT 10 мөр гаргасан. PICT нь greedy алгоритм ашигладаг: алхам бүрт одоогоор хамрагдаагүй хосыг хамгийн их хамарсан мөрийг сонгодог тул дараагийн алхмуудад үүссэн давхардал нь заримдаа хамгийн цөөн мөрт (оновчтой) хүргэдэггүй. Харин хамгийн цөөн covering array олох нь NP-хүнд бодлого тул PICT хурд, ойролцоо оновчтой байдлыг сонгосон. 3-way нь 144 бүрэн олонлогийн хуваарьт ердөө 20 мөр буюу ойролцоогоор 14%-д багтсан.
+**Greedy-гийн тайлбар:** PICT нь greedy алгоритм ашигладаг тул алхам бүрт үлдсэн хосуудыг хамгийн их бүрхэх мөрийг сонгохдоо заримдаа глобал хамгийн цөөн тоог гаргадаггүй (жишээ нь гараар 9 мөрөнд багтааж болох 2-way хослолыг PICT 10 мөрөөр гаргасан). 3-way нь 144 бүрэн олонлогийн хуваарьт ердөө 20 мөр буюу ойролцоогоор 14%-д багтсан.
 
 ### Даалгавар B2 — Шилжүүлгийн загваруудын харьцуулалт
 
-**Model файлууд:**
-
-`transfer-nc.model` (хязгаарлалтгүй):
-```
-From: Valid, Frozen, Missing
-To: Valid, Missing, SameAsFrom
-Amount: Zero, Normal, OverBalance, OverLimit
-Currency: Same, Different
-```
-
-`transfer.model` (A2-ын хязгаарлалттай):
-```
-From: Valid, Frozen, Missing
-To: Valid, Missing, SameAsFrom
-Amount: Zero, Normal, OverBalance, OverLimit
-Currency: Same, Different
-
-IF [From] = "Missing" THEN [Amount] = "Normal";
-IF [To] = "Missing" THEN [Amount] = "Normal";
-```
-
-`transfer-neg.model` (`~` сөрөг утгатай):
-```
-From: Valid, ~Frozen, ~Missing
-To: Valid, ~Missing, ~SameAsFrom
-Amount: Normal, ~Zero, ~OverBalance, ~OverLimit
-Currency: Same, Different
-
-IF [From] = "Missing" THEN [Amount] = "Normal";
-IF [To] = "Missing" THEN [Amount] = "Normal";
-```
-
-**Харьцуулалт** (толгой мөрийг тооцоогүй; бүгд `results/*.txt` файлын мөрийн тоотой таарна):
-
-| Загвар | Файл | Мөрийн тоо | Happy path мөр (Valid, Valid, Normal) | Нэг мөр дэх алдааны тоо (0 / 1 / 2 / 3) |
+| Загвар | Файл | Мөрийн тоо | Happy path мөр | Нэг мөр дэх алдааны онцлог |
 |---|---|---|---|---|
-| `transfer-nc.model` | `results/transfer-nc.txt` | **13** | 1 мөр (`Valid Valid Normal Different`) | 1 / 1 / 8 / 3 |
-| `transfer.model` | `results/transfer.txt` | **12** | **0 мөр** | 0 / 3 / 7 / 2 |
-| `transfer-neg.model` | `results/transfer-neg.txt` | **16** | 2 мөр (`Same`, `Different`) | 2 / 14 / 0 / 0 |
+| `transfer-nc.model` | `results/transfer-nc.txt` | **13** | 1 мөр | Хязгаарлалтгүй тул нэг мөрөнд олон алдаа орж masking үүснэ |
+| `transfer.model` | `results/transfer.txt` | **12** | **0 мөр** | `IF` хязгаарлалттай ч сөрөг утгыг ялгаагүй тул олон алдаа холилдоно |
+| `transfer-neg.model` | `results/transfer-neg.txt` | **16** | 2 мөр | `~` ашигласнаар нэг мөрөнд хамгийн ихдээ 1 сөрөг утга орно |
 
-**Дүгнэлт:**
-- Энгийн утгатай (`nc`, хязгаарлалттай) загварууд нэг мөрөнд 2–3 алдаа хольдог. Хязгаарлалт нь `Missing`-тэй хамт `Zero/OverBalance/OverLimit` орохыг л хаасан тул 12 мөрөнд хэвээр хоёр, гурван алдаа үлдэж, ихэнх мөр юуг шалгаж байгаа нь тодорхойгүй (error masking: эхний алдаа бусдыг нууж, `ERROR_..` нь зөвхөн давуу эрэмбээр тодорхойлогдоно). Мөн `transfer.txt`-д happy path мөр огт гараагүй — хосын хамралт хангагдсан ч бүх зүйл хүчинтэй хэвийн хэрэг шалгагдаагүй.
-- `~` ашигласан загвар нэг мөрөнд хамгийн ихдээ нэг алдаа оруулдаг (14 мөр яг 1 алдаатай) бөгөөд 2 happy path мөр гарсан. Мөр бүрийн oracle нь шууд тодорхой (нэг алдаа → нэг `ERROR_..`).
-- `~` хэрэглэхэд A2-ын `IF` хязгаарлалтууд **практикт хэрэггүй болсон**: нэг мөрөнд нэгээс олон сөрөг утга байж болохгүй тул `From = ~Missing` үед `Amount` нь аль хэдийн сөрөг биш (Normal) байна. Тиймээс хязгаарлалт хэзээ ч идэвхжихгүй (загварт хэвээр үлдээсэн ч үр дүнд нөлөөлөхгүй). Харин `~`-гүй загварт хязгаарлалт шаардлагатай хэвээр. Хэрэв өөр давхар (маскинг) тохиолдлыг шалгах хэрэгтэй бол (ж: Frozen + Zero) тусад нь гараар нэмэх хэрэгтэй — `~` нь тэдгээрийг хасдаг.
-
-**Бодит тест кейс ** Setup: дээрх орчин (`ACC-A` үлдэгдэл 10000 MNT, лимит 1000 MNT, өнөөдөр 0 зарцуулсан; `ACC-B`; `ACC-F` царцсан; `ACC-999` байхгүй; 1 USD = 10 MNT).
+**Бодит тест кейсүүд:**
 
 | № | PICT мөр | Setup | Оролт (`POST /transfer` body) | Oracle |
 |---|---|---|---|---|
-| TC1 | `transfer-neg` мөр 1: `Valid Valid Normal Same` (happy path) | `ACC-A` идэвхтэй, 10000 MNT | `{"from":"ACC-A","to":"ACC-B","amount":50,"currency":"MNT"}` | `201`, `{"result":"OK"}` |
-| TC2 | `transfer-neg` мөр 3: `Valid Valid ~OverBalance Different` | `ACC-A` 10000 MNT | `{"from":"ACC-A","to":"ACC-B","amount":2000,"currency":"USD"}` (= 20000 MNT) | `200`, `{"result":"ERROR_INSUFFICIENT"}` |
-| TC3 | `transfer-neg` мөр 8: `~Missing Valid Normal Same` | `ACC-999` байхгүй | `{"from":"ACC-999","to":"ACC-B","amount":50,"currency":"MNT"}` | `200`, `{"result":"ERROR_NO_FROM"}` |
-| TC4 | `transfer-neg` мөр 10: `Valid ~SameAsFrom Normal Different` | `ACC-A` идэвхтэй | `{"from":"ACC-A","to":"ACC-A","amount":50,"currency":"USD"}` | `200`, `{"result":"ERROR_SAME_ACCOUNT"}` |
-| TC5 | `transfer` мөр 1: `Frozen SameAsFrom Zero Same` (3 алдаатай) | `ACC-F` царцсан | `{"from":"ACC-F","to":"ACC-F","amount":0,"currency":"MNT"}` | `200`, `{"result":"ERROR_FROZEN"}` — давуу эрэмбэ: from → to → amount, тиймээс from-ийн алдаа буцна |
-
-### Даалгавар B3 — Дүгнэлт
-
-Гараар хийсэн category-partition (A3) нь алдааны семантикийг илүү сайн барьдаг: `[ERROR]`, `[SINGLE]`, `[IF]` тэмдэглэгээ болон давуу эрэмбэ нь мөр бүрийн хүлээгдэх үр дүнг (oracle) тодорхой болгож, `NearFull` шиг далд орчны онцгой тохиолдлыг олж илрүүлсэн. Гэхдээ хүнд тулгуурласан тул хосуудыг гүйцэт хамарсан эсэх нь баталгаагүй, бүх сонголт хэн нэгний анхаарлаас гарч магадгүй. PICT нь хосын (pairwise) хамралтыг математикийн хувьд баталгаажуулж, 144 → 10–16 хүртэл цөөн мөр өгдөг боловч алдааны утга учрыг өөрөө ойлгодоггүй: энгийн утгатай үед нэг мөрөнд олон алдаа хольж (error masking), happy path мөр гаргаж өгөхгүй байж болно (`transfer.txt`). `~` сөрөг утга нь энэ дутагдлыг засаж, category-partition-ий `[ERROR]`-той дүйцсэн ашигтай арга боловч оролтын хоорондох давхар алдааг шалгахаа больдог. Тиймээс хамгийн сайн нь хоёрыг хослуулах: PICT-ээр хосын хамралтыг, гараар алдааны семантик ба давхар нөхцөлийг. Хамгийн их бодол шаардсан алхам нь A2 (утга бүрийн ERROR/SINGLE/IF ангилал ба давуу эрэмбийн үндэслэл) ба `~` нь A2-ын хязгаарлалтыг хэрэггүй болгосныг ойлгох явдал байлаа. PICT-ийн мөрийн тоо greedy-гээс болж гараар тооцсоноос ялгаатай гарсан нь урьдчилан таамаглах боломжгүй гэдгийг харуулсан.
+| TC1 | `transfer-neg` (`Valid Valid Normal Same`) | `ACC-A` идэвхтэй, 10000 MNT | `{"from":"ACC-A","to":"ACC-B","amount":50,"currency":"MNT"}` | `201`, `{"result":"OK"}` |
+| TC2 | `transfer-neg` (`Valid Valid ~OverBalance Different`) | `ACC-A` 10000 MNT | `{"from":"ACC-A","to":"ACC-B","amount":2000,"currency":"USD"}` | `200`, `{"result":"ERROR_INSUFFICIENT"}` |
+| TC3 | `transfer` (`Frozen SameAsFrom Zero Same`) | `ACC-F` царцсан | `{"from":"ACC-F","to":"ACC-F","amount":0,"currency":"MNT"}` | `200`, `{"result":"ERROR_FROZEN"}` (давуу эрэмбээр) |
 
 ---
 
 ## Файлууд
 
 `README.md`, `browser.model`, `transfer-nc.model`, `transfer.model`, `transfer-neg.model`, `results/` (`pict-build.txt`, `browser-2way.txt`, `browser-3way.txt`, `transfer-nc.txt`, `transfer.txt`, `transfer-neg.txt`)
+
+---
+
+## Дүгнэлт
+
+Энгийн утгатай (`nc`, хязгаарлалттай) PICT загварууд нэг мөрөнд олон алдаа хольдог бөгөөд хязгаарлалт нь зөвхөн зарим боломжгүй хослолыг хаасан тул мөр бүрийн зорилго тодорхойгүй байх (`error masking`) тохиолдол гардаг. Харин `~` сөрөг утга ашигласан загвар нэг мөрөнд хамгийн ихдээ нэг алдаа оруулж, happy path мөрүүдийг ч тодорхой гаргадаг тул oracle илүү ойлгомжтой болдог. Гэсэн хэдий ч `~` ашиглахад нэг мөрөнд нэгээс олон сөрөг утга орохгүй тул өмнө нь гаргасан зарим `IF` хязгаарлалт практикт идэвхжихгүй байх жишээ ажиглагдсан. Гараар хийсэн category-partition (A3) нь алдааны семантик, давуу эрэмбэ болон `NearFull` зэрэг далд орчны нөхцөлийг нарийн илэрхийлдэг ч хосын хамралтыг математикаар баталгаажуулдаггүй. PICT нь pairwise хамралтыг хурдан, цөөн мөрөөр хангадаг боловч алдааны логикийг өөрөө ойлгохгүй тул хоёр аргыг хослуулах нь хамгийн үр дүнтэй. Хамгийн их бодол шаардсан алхам нь давуу эрэмбийг үндэслэлтэй тогтоож, түүнд нийцүүлэн `[ERROR]`, `[SINGLE]`, `[IF]` болон `~` сөрөг утгуудын уялдааг гаргах явдал байв. Мөн greedy алгоритмаас шалтгаалан PICT-ийн мөрийн тоо гараар тооцсоноос зөрөх нь урьдчилан таамаглах боломжгүй гэдгийг харуулсан.
+---
+
+## Хавсралт: Model файлууд
+
+### `browser.model`
+```text
+# browser.model Ñ„Ð°Ð¹Ð» Ò¯Ò¯ÑÐ³Ñ: 
+Content: Allow, Restrict, Block 
+Cookies: Allow, Restrict, Block 
+Popups: Yes, No 
+Addons: Yes, No 
+Attacks: Yes, No 
+Forgeries: Yes, No ```
+
+### `transfer-nc.model`
+```text
+From: Valid, Frozen, Missing
+To: Valid, Missing, SameAsFrom
+Amount: Zero, Normal, OverBalance, OverLimit
+Currency: Same, Different```
+
+### `transfer.model`
+```text
+From: Valid, Frozen, Missing
+To: Valid, Missing, SameAsFrom
+Amount: Zero, Normal, OverBalance, OverLimit
+Currency: Same, Different
+
+IF [From] = "Missing" THEN [Amount] = "Normal";
+IF [To] = "Missing" THEN [Amount] = "Normal";```
+
+### `transfer-neg.model`
+```text
+From: Valid, ~Frozen, ~Missing
+To: Valid, ~Missing, ~SameAsFrom
+Amount: Normal, ~Zero, ~OverBalance, ~OverLimit
+Currency: Same, Different
+
+IF [From] = "Missing" THEN [Amount] = "Normal";
+IF [To] = "Missing" THEN [Amount] = "Normal";```
+
